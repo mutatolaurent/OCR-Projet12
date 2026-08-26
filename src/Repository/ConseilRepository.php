@@ -59,7 +59,7 @@ class ConseilRepository extends ServiceEntityRepository
 
         // On utilise la fonction JSON_CONTAINS native de MySQL/MariaDB
         $query = $em->createNativeQuery(
-            'SELECT mois FROM conseil WHERE JSON_CONTAINS(mois, :mois)',
+            'SELECT id,texte,mois FROM conseil WHERE JSON_CONTAINS(mois, :mois)',
             $rsm
         );
 
