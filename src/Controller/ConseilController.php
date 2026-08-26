@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Conseil;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class ConseilController extends AbstractController
 {
@@ -28,7 +29,7 @@ final class ConseilController extends AbstractController
         $jsonConseilList = $serializer->serialize($conseilList, 'json');
 
         // Retourne la liste des conseils sous forme de réponse JSON
-        return new JsonResponse($jsonConseilList, Response::HTTP_OK, [], true);
+        return new JsonResponse($jsonConseilList, JsonResponse::HTTP_OK, [], true);
 
     }
 
@@ -83,15 +84,15 @@ final class ConseilController extends AbstractController
     {
         if ($conseil) {
             $jsonConseil = $serializer->serialize($conseil, 'json');
-            return new JsonResponse($jsonConseil, Response::HTTP_OK, [], true);
+            return new JsonResponse($jsonConseil, JsonResponse::HTTP_OK, [], true);
         }
 
-        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+        return new JsonResponse(null, JsonResponse::HTTP_NOT_FOUND);
     }
 
     // Route pour créer un nouveau conseil
     #[Route('/api/conseil', name: 'app_conseil_create', methods: ['POST'])]
-    // #[IsGranted('ROLE_ADMIN')] //
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
     public function createConseil(
         Request $request,
         SerializerInterface $serializer,
@@ -124,12 +125,12 @@ final class ConseilController extends AbstractController
         $location = $urlGenerator->generate('app_conseil_detail', ['id' => $conseil->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
         // retourne une réponse JSON avec le code HTTP 201 Created, l'URL de localisation et les données de l'utilisateur
-        return new JsonResponse($jsonConseil, Response::HTTP_CREATED, ["Location" => $location], true);
+        return new JsonResponse($jsonConseil, JsonResponse::HTTP_CREATED, ["Location" => $location], true);
     }
 
     // Route pour mettre à jour un conseil existant
     #[Route('/api/conseil/{id}', name: 'app_conseil_update', methods: ['PUT'])]
-    // #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un conseil')]
     public function updateConseil(
         Request $request,
         Conseil $conseil, // Symfony va automatiquement récupérer le Conseil par son ID
@@ -158,6 +159,22 @@ final class ConseilController extends AbstractController
         $jsonConseil = $serializer->serialize($conseil, 'json');
 
         // Retourne une réponse JSON avec le code HTTP 200 OK et les données du conseil mis à jour
-        return new JsonResponse($jsonConseil, Response::HTTP_OK, [], true);
+        return new JsonResponse($jsonConseil, JsonResponse::HTTP_OK, [], true);
+    }
+
+    // Route pour supprimer un conseil par son ID
+    #[Route('/api/conseil/{id}', name: 'app_conseil_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un conseil')]
+    public function deleteConseil(
+        Conseil $conseil, // Symfony va automatiquement récupérer le Conseil par son ID
+        EntityManagerInterface $em
+    ): JsonResponse {
+
+        // Supprime l'entité Conseil de la base de données
+        $em->remove($conseil);
+        $em->flush();
+
+        // Retourne une réponse vide avec le code HTTP 204 No Content pour indiquer une suppression réussie
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
