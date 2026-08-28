@@ -6,6 +6,7 @@ use App\Repository\ConseilRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: ConseilRepository::class)]
 class Conseil
@@ -30,6 +31,7 @@ class Conseil
             notInRangeMessage: "Chaque mois doit être compris entre {{ min }} et {{ max }}."
         )
     ])]
+    #[Assert\Callback([self::class, 'validateMoisUnique'])]
     private array $mois = [];
 
     public function getId(): ?int
@@ -60,4 +62,17 @@ class Conseil
 
         return $this;
     }
+
+    /**
+     * Valide que le tableau 'mois' ne contient pas de doublons.
+     */
+    public static function validateMoisUnique(array $mois, ExecutionContextInterface $context): void
+    {
+        if (count($mois) !== count(array_unique($mois))) {
+            $context->buildViolation('Le tableau de mois ne doit pas contenir de doublons.')
+                ->atPath('mois')
+                ->addViolation();
+        }
+    }
+
 }

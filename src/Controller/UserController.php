@@ -71,9 +71,9 @@ final class UserController extends AbstractController
     {
         //
         if ($user) {
-            //$context = SerializationContext::create()->setGroups(['getBooks']);
+            //$context = SerializationContext::create()->setGroups(['getUsers']);
             $jsonUser = $serializer->serialize($user, 'json');
-            // $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'getBooks']);
+            // $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
             return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
         }
 
