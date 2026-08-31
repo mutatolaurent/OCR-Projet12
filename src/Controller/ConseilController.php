@@ -1,11 +1,20 @@
 <?php
 
+/**
+ * ConseilController.php
+ *
+ * Ce fichier contient le contrôleur pour gérer les requêtes liées aux conseils.
+ * Il fournit des routes pour récupérer la liste des conseils, les conseils par mois,
+ * les détails d'un conseil, ainsi que pour créer, mettre à jour et supprimer des conseils.
+ *
+ * @package App\Controller
+ */
+
 namespace App\Controller;
 
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\ConseilRepository;
@@ -18,7 +27,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class ConseilController extends AbstractController
 {
-    // Route pour récupérer la liste des conseils
+    /**
+     * Route pour récupérer la liste des conseils.
+     *
+     * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
+     * @return JsonResponse La réponse JSON contenant la liste des conseils.
+     */
     #[Route('/api/conseils', name: 'app_conseil', methods: ['GET'])]
     public function getConseilList(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -33,7 +48,14 @@ final class ConseilController extends AbstractController
 
     }
 
-    // Route pour récupérer les conseils d'un mois donné
+    /**
+     * Route pour récupérer les conseils d'un mois donné.
+     *
+     * @param int $mois Le mois pour lequel récupérer les conseils (1 à 12).
+     * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
+     * @return JsonResponse La réponse JSON contenant les conseils du mois spécifié ou un message d'erreur si le mois est invalide.
+     */
     #[Route('/api/conseil/{mois}', name: 'app_conseil_mois', methods: ['GET'])]
     public function getConseilsParMois(
         int $mois,
@@ -61,7 +83,13 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseils, JsonResponse::HTTP_OK, [], true);
     }
 
-    // Route pour récupérer les conseils du mois courant
+    /**
+     * Route pour récupérer les conseils du mois courant.
+     *
+     * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
+     * @return JsonResponse La réponse JSON contenant les conseils du mois courant.
+     */
     #[Route('/api/conseil', name: 'app_conseil_mois_courant', methods: ['GET'])]
     public function getConseilMoisCourant(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -78,7 +106,13 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseils, JsonResponse::HTTP_OK, [], true);
     }
 
-    // Route pour récupérer les détails d'un conseil par son ID
+    /**
+     * Route pour récupérer les détails d'un conseil par son ID.
+     *
+     * @param Conseil $conseil L'entité Conseil récupérée automatiquement par Symfony grâce à l'ID passé dans l'URL.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir l'objet en JSON.
+     * @return JsonResponse La réponse JSON contenant les détails du conseil ou un message d'erreur si le conseil n'est pas trouvé.
+     */
     #[Route('/api/conseil/{id}', name: 'app_conseil_detail', methods: ['GET'])]
     public function getDetailConseil(Conseil $conseil, SerializerInterface $serializer): JsonResponse
     {
@@ -90,7 +124,16 @@ final class ConseilController extends AbstractController
         return new JsonResponse(null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    // Route pour créer un nouveau conseil
+    /**
+     * Crée un nouveau conseil.
+     *
+     * @param Request $request La requête HTTP contenant les données du conseil à créer.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @param UrlGeneratorInterface $urlGenerator Le générateur d'URL pour créer l'URL de localisation du nouveau conseil.
+     * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes de l'entité Conseil.
+     * @return JsonResponse La réponse JSON contenant le conseil créé ou les erreurs de validation.
+     */
     #[Route('/api/conseil', name: 'app_conseil_create', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
     public function createConseil(
@@ -128,7 +171,16 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseil, JsonResponse::HTTP_CREATED, ["Location" => $location], true);
     }
 
-    // Route pour mettre à jour un conseil existant
+    /**
+     * Met à jour un conseil existant.
+     *
+     * @param Request $request La requête HTTP contenant les données du conseil à mettre à jour.
+     * @param Conseil $conseil L'entité Conseil récupérée automatiquement par Symfony grâce à l'ID passé dans l'URL.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes de l'entité Conseil.
+     * @return JsonResponse La réponse JSON contenant le conseil mis à jour ou les erreurs de validation.
+     */
     #[Route('/api/conseil/{id}', name: 'app_conseil_update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un conseil')]
     public function updateConseil(
@@ -162,7 +214,13 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseil, JsonResponse::HTTP_OK, [], true);
     }
 
-    // Route pour supprimer un conseil par son ID
+    /**
+     * Supprime un conseil existant.
+     *
+     * @param Conseil $conseil L'entité Conseil récupérée automatiquement par Symfony grâce à l'ID passé dans l'URL.
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @return JsonResponse La réponse JSON indiquant le succès de la suppression ou un message d'erreur si le conseil n'est pas trouvé.
+     */
     #[Route('/api/conseil/{id}', name: 'app_conseil_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un conseil')]
     public function deleteConseil(

@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * UserController.php
+ *
+ * Ce fichier contient le contrôleur pour gérer les requêtes liées aux utilisateurs.
+ * Il fournit des routes pour créer, récupérer, mettre à jour et supprimer des utilisateurs.
+ *
+ * @package App\Controller
+ */
+
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,12 +28,26 @@ final class UserController extends AbstractController
 {
     private UserPasswordHasherInterface $userPasswordHasher;
 
+    /**
+     * UserController constructor.
+     *
+     * @param UserPasswordHasherInterface $userPasswordHasher Le service de hachage de mot de passe pour sécuriser les mots de passe des utilisateurs.
+     */
     public function __construct(UserPasswordHasherInterface $userPasswordHasher)
     {
         $this->userPasswordHasher = $userPasswordHasher;
     }
 
-    // Route pour créer un nouvel utilisateur
+    /**
+     * Crée un nouvel utilisateur à partir des données JSON reçues dans la requête HTTP.
+     *
+     * @param Request $request La requête HTTP contenant les données de l'utilisateur à créer.
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les données JSON en objet User.
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @param UrlGeneratorInterface $urlGenerator Le générateur d'URL pour créer l'URL de localisation du nouvel utilisateur.
+     * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes sur l'objet User.
+     * @return JsonResponse La réponse JSON contenant les données de l'utilisateur créé ou les erreurs de validation.
+     */
     #[Route('/api/user', name: 'app_user_create', methods: ['POST'])]
     public function createUser(
         Request $request,
@@ -65,7 +88,13 @@ final class UserController extends AbstractController
 
     }
 
-    // Route pour récupérer les détails d'un utilisateur par son ID
+    /**
+     * Récupère les détails d'un utilisateur par son ID.
+     *
+     * @param User $user L'utilisateur à récupérer (Symfony va automatiquement le récupérer par son ID).
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir l'objet User en JSON.
+     * @return JsonResponse La réponse JSON contenant les données de l'utilisateur ou un message d'erreur si l'utilisateur n'existe pas.
+     */
     #[Route('/api/user/{id}', name: 'app_user_detail', methods: ['GET'])]
     public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse
     {
@@ -80,7 +109,17 @@ final class UserController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NOT_FOUND);
     }
 
-    // Route pour mettre à jour un utilisateur existant
+    /**
+     * Met à jour un utilisateur existant avec les données JSON reçues dans la requête HTTP.
+     *
+     * @param Request $request La requête HTTP contenant les données de l'utilisateur à mettre à jour.
+     * @param User $user L'utilisateur à mettre à jour (Symfony va automatiquement le récupérer par son ID).
+     * @param SerializerInterface $serializer Le service de sérialisation pour convertir les données JSON en objet User.
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes sur l'objet User.
+     * @param UserPasswordHasherInterface $userPasswordHasher Le service de hachage de mot de passe pour sécuriser les mots de passe des utilisateurs.
+     * @return JsonResponse La réponse JSON contenant les données de l'utilisateur mis à jour ou les erreurs de validation.
+     */
     #[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un utilisateur')]
     public function updateUser(
@@ -128,7 +167,13 @@ final class UserController extends AbstractController
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
-    // Route pour supprimer un User par son ID
+    /**
+     * Supprime un utilisateur existant par son ID.
+     *
+     * @param User $user L'utilisateur à supprimer (Symfony va automatiquement le récupérer par son ID).
+     * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
+     * @return JsonResponse La réponse JSON indiquant le succès de l'opération ou un message d'erreur si l'utilisateur n'existe pas.
+     */
     #[Route('/api/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un utilisateur')]
     public function deleteUser(
