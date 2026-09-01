@@ -8,7 +8,7 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.weatherapi_key: "%env(WEATHERAPI_KEY)%" # Clé API pour accéder à l'API météo
-    app.weatherapi_base_url: "https://api.weatherapi.com/v1/current.json" # URL de base de l'API météo
+    app.weatherapi_base_url: "%env(WEATHERAPI_BASE_URL)%" # URL de base de l'API météo
     app.weatherapi_cache_ttl: 10 # Durée de vie du cacheréponses API météo (en secondes)
     app.weatherapi_cache_tag: "townCache" # Tag pour le cache des réponses API météo
 
