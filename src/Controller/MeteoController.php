@@ -23,6 +23,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[Route('/api/meteo', name: 'api_meteo_')] // Préfixe de route au niveau de la classe
 final class MeteoController extends AbstractController
 {
     /**
@@ -48,72 +49,30 @@ final class MeteoController extends AbstractController
     }
 
     /**
-     * Route pour récupérer la météo en fonction de la ville de l'utilisateur connecté.
+     * Récupère les données météo pour une ville donnée ou pour la ville de l'utilisateur connecté.
      *
      * @param TagAwareCacheInterface $cachePool Le pool de cache pour stocker les réponses de l'API.
+     * @param string|null $ville La ville pour laquelle récupérer les données météo (optionnel).
      * @return JsonResponse La réponse JSON contenant les données météo et le statut de la réponse de l'API externe.
      */
-    #[Route('/api/meteo', name: 'app_meteo_by_user_town', methods: ['GET'])]
-    public function getWeatherByUserTown(TagAwareCacheInterface $cachePool): JsonResponse
+    #[Route('/{ville}', name: 'by_town', methods: ['GET'])]
+    #[Route('', name: 'by_user_town', methods: ['GET'])]
+    public function getWeatherByTown(?string $ville, TagAwareCacheInterface $cachePool): JsonResponse
     {
-        $user = $this->security->getUser();
+        // Si la ville n'est pas spécifiée dans l'URL, la récupérer depuis l'utilisateur connecté
+        if (null === $ville) {
+            $user = $this->security->getUser();
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Utilisateur non authentifié'], JsonResponse::HTTP_UNAUTHORIZED);
+            if (!$user instanceof User) {
+                return new JsonResponse(['error' => 'Utilisateur non authentifié'], JsonResponse::HTTP_UNAUTHORIZED);
+            }
+
+            $ville = $user->getVille();
+            if (empty($ville)) {
+                return new JsonResponse(['error' => 'Absence de ville dans le compte de cet utilisateur'], JsonResponse::HTTP_BAD_REQUEST);
+            }
         }
 
-        // S'assurer que l'utilisateur a bien une ville associée à son compte
-        $ville = $user->getVille();
-        if (empty($ville)) {
-            return new JsonResponse(['error' => 'Absence de ville dans le compte de cet utilisateur'], JsonResponse::HTTP_BAD_REQUEST);
-        }
-
-        $content = $this->_getWeatherData($ville, $cachePool);
-
-        // Retourner la réponse JSON avec le contenu de l'API météo et le statut de la réponse de l'API externe
-        return new JsonResponse($content['content'], $content['status']);
-    }
-
-    /**
-     * Récupère les données météo pour une ville donnée en utilisant l'API externe et le cache.
-     *
-     * @param string $ville La ville pour laquelle récupérer les données météo.
-     * @param TagAwareCacheInterface $cachePool Le pool de cache pour stocker les réponses de l'API.
-     * @return JsonResponse La réponse JSON contenant les données météo et le statut de la réponse de l'API externe.
-     */
-    #[Route('/api/meteo/{ville}', name: 'app_meteo_by_town', methods: ['GET'])]
-    public function getWeatherByTown(string $ville, TagAwareCacheInterface $cachePool): JsonResponse
-    {
-        $content = $this->_getWeatherData($ville, $cachePool);
-
-        // Retourner la réponse JSON avec le contenu de l'API météo
-        return new JsonResponse($content['content'], $content['status']);
-    }
-
-    /**
-     * Supprime le cache météo pour toutes les villes en utilisant le tag de cache.
-     *
-     * @param TagAwareCacheInterface $cachePool Le pool de cache pour invalider le cache.
-     * @return JsonResponse Une réponse JSON indiquant le succès de l'opération.
-     */
-    #[Route('/api/meteo', name: 'app_meteo_delete_cache', methods: ['DELETE'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour vider le cache météo')]
-    public function deleteTownCache(TagAwareCacheInterface $cachePool): JsonResponse
-    {
-        $cachePool->invalidateTags([$this->weatherApiCacheTag]);
-
-        return new JsonResponse(['message' => 'Cache météo vidé avec succès'], JsonResponse::HTTP_NO_CONTENT);
-    }
-
-    /**
-     * Récupère les données météo pour une ville donnée en utilisant l'API externe et le cache.
-     *
-     * @param string $ville La ville pour laquelle récupérer les données météo.
-     * @param TagAwareCacheInterface $cachePool Le pool de cache pour stocker les réponses de l'API.
-     * @return array Un tableau contenant le statut de la réponse et le contenu de l'API météo.
-     */
-    private function _getWeatherData(string $ville, TagAwareCacheInterface $cachePool): array
-    {
         // Supprimer les accents et les caractères spéciaux de la ville
         $cleanedVille = $this->slugger->slug($ville)->lower()->toString();
 
@@ -123,9 +82,10 @@ final class MeteoController extends AbstractController
         // Construire l'URL complète de l'API avec la ville et la clé API
         $apiUrl = $this->weatherApiBaseUrl . "?key=" . $this->weatherApiKey . "&q=" . $cleanedVille . "&lang=fr";
 
-        // Utiliser le cache pour stocker la réponse de l'API météo pendant 10 secondes
-        $content = $cachePool->get($idCache, function (ItemInterface $item) use ($apiUrl) {
-            echo("L'élément n'est pas encore en cache!\n\n");
+        // Utiliser le cache pour stocker la réponse de l'API météo
+        $isHit = true;
+        $content = $cachePool->get($idCache, function (ItemInterface $item) use ($apiUrl, &$isHit) {
+            $isHit = false;
 
             // Effectuer la requête HTTP vers l'API météo
             $response = $this->httpClient->request(
@@ -146,13 +106,37 @@ final class MeteoController extends AbstractController
             // Ajouter un tag pour le cache afin de pouvoir l'invalider facilement si nécessaire
             $item->tag($this->weatherApiCacheTag);
 
-            // Définir la durée de vie du cache à 10 secondes
+            // Définir la durée de vie du cache
             $item->expiresAfter($this->weatherApiCacheTtl);
 
             // Retourner le tableau contenant le statut et le contenu de l'API
             return $rep;
         });
 
-        return $content;
+        // Créer une réponse JSON avec le contenu de l'API et le statut HTTP approprié
+        $response = new JsonResponse($content['content'], $content['status']);
+
+        // Ajouter un en-tête personnalisé pour indiquer si la réponse provient du cache ou non
+        $response->headers->set('X-Data-Cache', $isHit ? 'HIT' : 'MISS');
+
+        return $response;
     }
+
+    /**
+     * Supprime le cache météo pour toutes les villes en utilisant le tag de cache.
+     *
+     * @param TagAwareCacheInterface $cachePool Le pool de cache pour invalider le cache.
+     * @return JsonResponse Une réponse JSON indiquant le succès de l'opération.
+     */
+    // #[Route('/api/meteo', name: 'app_meteo_delete_cache', methods: ['DELETE'])]
+    #[Route('/admin', name: 'delete_cache', methods: ['DELETE'])] // La route finale sera /api/meteo
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour vider le cache météo')]
+    public function deleteTownCache(TagAwareCacheInterface $cachePool): JsonResponse
+    {
+        $cachePool->invalidateTags([$this->weatherApiCacheTag]);
+
+        return new JsonResponse(['message' => 'Cache météo vidé avec succès'], JsonResponse::HTTP_NO_CONTENT);
+    }
+
+
 }

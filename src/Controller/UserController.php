@@ -24,6 +24,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[Route('/api/user', name: 'api_user_')] // Préfixe de route au niveau de la classe
 final class UserController extends AbstractController
 {
     private UserPasswordHasherInterface $userPasswordHasher;
@@ -48,7 +49,8 @@ final class UserController extends AbstractController
      * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes sur l'objet User.
      * @return JsonResponse La réponse JSON contenant les données de l'utilisateur créé ou les erreurs de validation.
      */
-    #[Route('/api/user', name: 'app_user_create', methods: ['POST'])]
+    //#[Route('/api/user', name: 'app_user_create', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
     public function createUser(
         Request $request,
         SerializerInterface $serializer,
@@ -81,7 +83,7 @@ final class UserController extends AbstractController
         $jsonUser = $serializer->serialize($user, 'json');
 
         // génération de l'URL pour accéder aux détails de l'utilisateur nouvellement créé
-        $location = $urlGenerator->generate('app_user_detail', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $location = $urlGenerator->generate('api_user_detail', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
         // retourne une réponse JSON avec le code HTTP 201 Created, l'URL de localisation et les données de l'utilisateur
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["Location" => $location], true);
@@ -95,7 +97,8 @@ final class UserController extends AbstractController
      * @param SerializerInterface $serializer Le service de sérialisation pour convertir l'objet User en JSON.
      * @return JsonResponse La réponse JSON contenant les données de l'utilisateur ou un message d'erreur si l'utilisateur n'existe pas.
      */
-    #[Route('/api/user/{id}', name: 'app_user_detail', methods: ['GET'])]
+    //#[Route('/api/user/{id}', name: 'app_user_detail', methods: ['GET'])]
+    #[Route('/{id}', name: 'detail', methods: ['GET'])]
     public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse
     {
         //
@@ -120,7 +123,8 @@ final class UserController extends AbstractController
      * @param UserPasswordHasherInterface $userPasswordHasher Le service de hachage de mot de passe pour sécuriser les mots de passe des utilisateurs.
      * @return JsonResponse La réponse JSON contenant les données de l'utilisateur mis à jour ou les erreurs de validation.
      */
-    #[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
+    //#[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un utilisateur')]
     public function updateUser(
         Request $request,
@@ -174,7 +178,8 @@ final class UserController extends AbstractController
      * @param EntityManagerInterface $em L'EntityManager pour gérer la persistance des entités.
      * @return JsonResponse La réponse JSON indiquant le succès de l'opération ou un message d'erreur si l'utilisateur n'existe pas.
      */
-    #[Route('/api/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
+    //#[Route('/api/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un utilisateur')]
     public function deleteUser(
         User $user, // Symfony va automatiquement récupérer le Conseil par son ID
