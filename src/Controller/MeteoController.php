@@ -22,8 +22,11 @@ use App\Entity\User;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 
 #[Route('/api/meteo', name: 'api_meteo_')] // Préfixe de route au niveau de la classe
+#[OA\Tag(name: 'Météo', description: 'API pour gérer les données météorologiques')]
 final class MeteoController extends AbstractController
 {
     /**

@@ -23,8 +23,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use Nelmio\ApiDocBundle\Attribute\Security;
+use OpenApi\Attributes as OA;
 
 #[Route('/api/user', name: 'api_user_')] // Préfixe de route au niveau de la classe
+#[OA\Tag(name: 'Users', description: 'API pour gérer les utilisateurs')]
 final class UserController extends AbstractController
 {
     private UserPasswordHasherInterface $userPasswordHasher;
@@ -50,6 +54,24 @@ final class UserController extends AbstractController
      * @return JsonResponse La réponse JSON contenant les données de l'utilisateur créé ou les erreurs de validation.
      */
     //#[Route('/api/user', name: 'app_user_create', methods: ['POST'])]
+    #[OA\Response(
+        response: 201,
+        description: 'Crée un nouvel utilisateur',
+        content: new Model(type: User::class)
+    )]
+    #[OA\RequestBody(
+        description: 'Données du nouvel utilisateur à créer',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'email', type: 'string', example: 'paul.durand@ecogarden.fr'),
+                new OA\Property(property: 'password', type: 'string', example: '176tfpkKSR*/k'),
+                new OA\Property(property: 'ville', type: 'string', example: 'La Rochelle'),
+                new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string'), example: '["ROLE_USER"]'),
+            ],
+            type: 'object',
+            required: ['email', 'password', 'ville'] // les champs obligatoires
+        )
+    )]
     #[Route('', name: 'create', methods: ['POST'])]
     public function createUser(
         Request $request,
@@ -99,6 +121,7 @@ final class UserController extends AbstractController
      */
     //#[Route('/api/user/{id}', name: 'app_user_detail', methods: ['GET'])]
     #[Route('/{id}', name: 'detail', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour récupérer les information d\'un utilisateur')]
     public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse
     {
         //
@@ -124,6 +147,24 @@ final class UserController extends AbstractController
      * @return JsonResponse La réponse JSON contenant les données de l'utilisateur mis à jour ou les erreurs de validation.
      */
     //#[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
+    #[OA\Response(
+        response: 201,
+        description: 'Met à jour un utilisateur existant',
+        content: new Model(type: User::class)
+    )]
+    #[OA\RequestBody(
+        description: 'Données de l\'utilisateur à mettre à jour',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'email', type: 'string', example: 'paul.durand@ecogarden.fr'),
+                new OA\Property(property: 'password', type: 'string', example: '176tfpkKSR*/k'),
+                new OA\Property(property: 'ville', type: 'string', example: 'La Rochelle'),
+                new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string'), example: '["ROLE_USER"]'),
+            ],
+            type: 'object',
+            //required: ['email', 'password', 'ville'] // les champs obligatoires
+        )
+    )]
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un utilisateur')]
     public function updateUser(

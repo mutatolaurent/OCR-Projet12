@@ -24,11 +24,15 @@ use App\Entity\Conseil;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use Nelmio\ApiDocBundle\Attribute\Security;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name: 'Conseils', description: 'API pour gérer les conseils de jardinage')]
 final class ConseilController extends AbstractController
 {
     /**
-     * Route pour récupérer la liste des conseils.
+     * Récupère la liste des conseils.
      *
      * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
      * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
@@ -49,7 +53,7 @@ final class ConseilController extends AbstractController
     }
 
     /**
-     * Route pour récupérer les conseils d'un mois donné.
+     * Récupère les conseils d'un mois donné.
      *
      * @param int $mois Le mois pour lequel récupérer les conseils (1 à 12).
      * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
@@ -84,7 +88,7 @@ final class ConseilController extends AbstractController
     }
 
     /**
-     * Route pour récupérer les conseils du mois courant.
+     * Récupère les conseils du mois courant.
      *
      * @param ConseilRepository $conseilRepository Le repository pour accéder aux données des conseils.
      * @param SerializerInterface $serializer Le service de sérialisation pour convertir les objets en JSON.
@@ -107,7 +111,7 @@ final class ConseilController extends AbstractController
     }
 
     /**
-     * Route pour récupérer les détails d'un conseil par son ID.
+     * Récupère les détails d'un conseil par son ID.
      *
      * @param Conseil $conseil L'entité Conseil récupérée automatiquement par Symfony grâce à l'ID passé dans l'URL.
      * @param SerializerInterface $serializer Le service de sérialisation pour convertir l'objet en JSON.
@@ -134,6 +138,22 @@ final class ConseilController extends AbstractController
      * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes de l'entité Conseil.
      * @return JsonResponse La réponse JSON contenant le conseil créé ou les erreurs de validation.
      */
+    #[OA\Response(
+        response: 201,
+        description: 'Crée un nouveau conseil',
+        content: new Model(type: Conseil::class)
+    )]
+    #[OA\RequestBody(
+        description: 'Données du nouveau conseil à créer',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'texte', type: 'string', example: 'Conseil de jardinage pour le mois de...'),
+                new OA\Property(property: 'mois', type: 'array', items: new OA\Items(type: 'integer', format: 'int32'), example: '[1, 2, 3]'),
+            ],
+            type: 'object',
+            required: ['texte', 'mois'] // les champs obligatoires
+        )
+    )]
     #[Route('/api/conseil', name: 'app_conseil_create', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
     public function createConseil(
@@ -181,6 +201,22 @@ final class ConseilController extends AbstractController
      * @param ValidatorInterface $validator Le service de validation pour vérifier les contraintes de l'entité Conseil.
      * @return JsonResponse La réponse JSON contenant le conseil mis à jour ou les erreurs de validation.
      */
+    #[OA\Response(
+        response: 200,
+        description: 'Met à jour un conseil existant',
+        content: new Model(type: Conseil::class)
+    )]
+    #[OA\RequestBody(
+        description: 'Données du conseil à mettre à jour',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'texte', type: 'string', example: 'Nouveau texte pour le conseil...'),
+                new OA\Property(property: 'mois', type: 'array', items: new OA\Items(type: 'integer', format: 'int32'), example: '[4, 5]'),
+            ],
+            type: 'object',
+            //required: ['texte', 'mois'] // les champs obligatoires
+        )
+    )]
     #[Route('/api/conseil/{id}', name: 'app_conseil_update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un conseil')]
     public function updateConseil(
