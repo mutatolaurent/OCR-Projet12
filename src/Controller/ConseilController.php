@@ -21,6 +21,7 @@ use App\Repository\ConseilRepository;
 use Symfony\Component\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Conseil;
+use App\Entity\User;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -45,7 +46,7 @@ final class ConseilController extends AbstractController
         $conseilList = $conseilRepository->findAll();
 
         // Sérialisation de la liste des conseils en JSON
-        $jsonConseilList = $serializer->serialize($conseilList, 'json');
+        $jsonConseilList = $serializer->serialize($conseilList, 'json', ['groups' => 'conseil:read']);
 
         // Retourne la liste des conseils sous forme de réponse JSON
         return new JsonResponse($jsonConseilList, JsonResponse::HTTP_OK, [], true);
@@ -80,7 +81,7 @@ final class ConseilController extends AbstractController
         $conseils = $conseilRepository->findByMois($mois);
 
         // 3. Sérialisation des conseils en JSON
-        $jsonConseils = $serializer->serialize($conseils, 'json');
+        $jsonConseils = $serializer->serialize($conseils, 'json', ['groups' => 'conseil:read']);
 
         // 4. Retour de la réponse
         // Si aucun conseil n'est trouvé, on renvoit un tableau vide avec un code 200
@@ -104,7 +105,7 @@ final class ConseilController extends AbstractController
         $conseils = $conseilRepository->findByMois($currentMonth);
 
         // 3. Sérialisation des conseils en JSON
-        $jsonConseils = $serializer->serialize($conseils, 'json');
+        $jsonConseils = $serializer->serialize($conseils, 'json', ['groups' => 'conseil:read']);
 
         // 4. Retour de la réponse
         return new JsonResponse($jsonConseils, JsonResponse::HTTP_OK, [], true);
@@ -121,7 +122,7 @@ final class ConseilController extends AbstractController
     public function getDetailConseil(Conseil $conseil, SerializerInterface $serializer): JsonResponse
     {
         if ($conseil) {
-            $jsonConseil = $serializer->serialize($conseil, 'json');
+            $jsonConseil = $serializer->serialize($conseil, 'json', ['groups' => 'conseil:read']);
             return new JsonResponse($jsonConseil, JsonResponse::HTTP_OK, [], true);
         }
 
@@ -167,6 +168,11 @@ final class ConseilController extends AbstractController
         // Désérialisation des données JSON reçues dans la requête en un objet Conseil
         $conseil = $serializer->deserialize($request->getContent(), Conseil::class, 'json');
 
+        // Récupération de l'utilisateur authentifié
+        /** @var User $user */
+        $user = $this->getUser();
+        $conseil->setUser($user);
+
         // On vérifie les erreurs
         $errors = $validator->validate($conseil);
 
@@ -182,7 +188,7 @@ final class ConseilController extends AbstractController
         $em->flush();
 
         // Sérialisation de l'objet User en JSON pour la réponse
-        $jsonConseil = $serializer->serialize($conseil, 'json');
+        $jsonConseil = $serializer->serialize($conseil, 'json', ['groups' => 'conseil:read']);
 
         // génération de l'URL pour accéder aux détails de l'utilisateur nouvellement créé
         $location = $urlGenerator->generate('app_conseil_detail', ['id' => $conseil->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
@@ -244,7 +250,7 @@ final class ConseilController extends AbstractController
         $em->flush();
 
         // Sérialisation de l'objet Conseil mis à jour en JSON pour la réponse
-        $jsonConseil = $serializer->serialize($conseil, 'json');
+        $jsonConseil = $serializer->serialize($conseil, 'json', ['groups' => 'conseil:read']);
 
         // Retourne une réponse JSON avec le code HTTP 200 OK et les données du conseil mis à jour
         return new JsonResponse($jsonConseil, JsonResponse::HTTP_OK, [], true);

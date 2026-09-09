@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ConseilRepository::class)]
 class Conseil
@@ -14,14 +15,17 @@ class Conseil
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['conseil:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['conseil:read'])]
     #[Assert\NotBlank(message: "Le texte est obligatoire")]
     #[Assert\Length(min: 10, minMessage: "Le texte doit faire au moins {{ limit }} caractères")]
     private ?string $texte = null;
 
     #[ORM\Column]
+    #[Groups(['conseil:read'])]
     #[Assert\Type('array', message: "Le champ 'mois' doit être un tableau.")]
     #[Assert\Count(min: 1, minMessage: "Le tableau de mois ne peut pas être vide.")]
     #[Assert\All([
@@ -33,6 +37,9 @@ class Conseil
     ])]
     #[Assert\Callback([self::class, 'validateMoisUnique'])]
     private array $mois = [];
+
+    #[ORM\ManyToOne(inversedBy: 'conseils')]
+    private ?User $user = null;
 
     public function getId(): ?int
     {
@@ -73,6 +80,18 @@ class Conseil
                 ->atPath('mois')
                 ->addViolation();
         }
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
     }
 
 }

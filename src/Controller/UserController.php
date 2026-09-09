@@ -102,7 +102,7 @@ final class UserController extends AbstractController
         $em->flush();
 
         // Sérialisation de l'objet User en JSON pour la réponse
-        $jsonUser = $serializer->serialize($user, 'json');
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
 
         // génération de l'URL pour accéder aux détails de l'utilisateur nouvellement créé
         $location = $urlGenerator->generate('api_user_detail', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
@@ -127,7 +127,8 @@ final class UserController extends AbstractController
         //
         if ($user) {
             //$context = SerializationContext::create()->setGroups(['getUsers']);
-            $jsonUser = $serializer->serialize($user, 'json');
+            //$jsonUser = $serializer->serialize($user, 'json');
+            $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
             // $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
             return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
         }

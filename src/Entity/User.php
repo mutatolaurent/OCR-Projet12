@@ -3,11 +3,14 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -17,9 +20,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(['user:read'])]
     #[Assert\NotBlank(message: "L'email est obligatoire")]
     #[Assert\Email(message: "L'email n'est pas valide.")]
     private ?string $email = null;
@@ -28,6 +33,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var list<string> The user roles
      */
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private array $roles = [];
 
     /**
@@ -39,14 +45,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:read'])]
     #[Assert\NotBlank(message: "La ville est obligatoire")]
     private ?string $ville = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $latitude = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
+    #[Groups(['user:read'])]
     private ?string $longitude = null;
+
+    /**
+     * @var Collection<int, Conseil>
+     */
+    #[ORM\OneToMany(targetEntity: Conseil::class, mappedBy: 'user')]
+    private Collection $conseils;
+
+    public function __construct()
+    {
+        $this->conseils = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -173,5 +193,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUsername(): string
     {
         return $this->getUserIdentifier();
+    }
+
+    /**
+     * @return Collection<int, Conseil>
+     */
+    public function getConseils(): Collection
+    {
+        return $this->conseils;
+    }
+
+    public function addConseil(Conseil $conseil): static
+    {
+        if (!$this->conseils->contains($conseil)) {
+            $this->conseils->add($conseil);
+            $conseil->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeConseil(Conseil $conseil): static
+    {
+        if ($this->conseils->removeElement($conseil)) {
+            // set the owning side to null (unless already changed)
+            if ($conseil->getUser() === $this) {
+                $conseil->setUser(null);
+            }
+        }
+
+        return $this;
     }
 }
