@@ -9,7 +9,7 @@
 parameters:
     app.weatherapi_key: "%env(WEATHERAPI_KEY)%" # Clé API pour accéder à l'API météo
     app.weatherapi_base_url: "%env(WEATHERAPI_BASE_URL)%" # URL de base de l'API météo
-    app.weatherapi_cache_ttl: 10 # Durée de vie du cacheréponses API météo (en secondes)
+    app.weatherapi_cache_ttl: 30 # Durée de vie du cacheréponses API météo (en secondes)
     app.weatherapi_cache_tag: "townCache" # Tag pour le cache des réponses API météo
 
 services:

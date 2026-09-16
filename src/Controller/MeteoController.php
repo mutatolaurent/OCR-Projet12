@@ -119,8 +119,15 @@ final class MeteoController extends AbstractController
         // Créer une réponse JSON avec le contenu de l'API et le statut HTTP approprié
         $response = new JsonResponse($content['content'], $content['status']);
 
-        // Ajouter un en-tête personnalisé pour indiquer si la réponse provient du cache ou non
-        $response->headers->set('X-Data-Cache', $isHit ? 'HIT' : 'MISS');
+        // Ajoute un en-tête personnalisé pour indiquer si la réponse provient du cache ou non
+        $response->headers->set('X-Cache', $isHit ? 'HIT' : 'MISS');
+
+        // Directives Cache-Control pour LE CLIENT
+        $response->setCache([
+            'max_age'       => $this->weatherApiCacheTtl, // Le client peut cacher la réponse pendant $weatherApiCacheTtl secondes
+            's_maxage'      => $this->weatherApiCacheTtl, // Les proxys/CDN peuvent aussi cacher la réponse pendant $weatherApiCacheTtl secondes
+            'public'        => true, // Permet la mise en cache par tout le monde
+        ]);
 
         return $response;
     }
